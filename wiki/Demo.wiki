@@ -1,0 +1,3 @@
+#summary A demo Flash clip playing a random module file
+
+<wiki:gadget url="http://83.150.87.51/~modplayer/gadget/gadget.html?v=4" />
