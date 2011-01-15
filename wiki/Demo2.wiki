@@ -1,4 +1,4 @@
 #summary A demo tune (Imaginary Friend by Radix) with some profiling information
 
 
-<wiki:gadget width="600" height="450" url="http://83.150.87.51/~modplayer/gadget/gadget2.html?v=3" />
+<wiki:gadget width="600" height="450" url="http://83.150.87.51/~modplayer/gadget/gadget2.html?v=4" />
