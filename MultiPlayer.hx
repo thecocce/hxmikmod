@@ -147,7 +147,7 @@ class MultiPlayer extends Sprite {
 		// new song, reset sample graphics
 		for (i in indicators) if (i!=null) removeChild(i);
 		indicators=new Array();
-		for (i in 0 ... te.module.numchn) onVoicePlay(new TrackerVoiceEvent(i,-1,0,0,0,0,0));
+		for (i in 0 ... e.module.numchn) onVoicePlay(new TrackerVoiceEvent(i,-1,0,0,0,0,0));
 		Player.Start(e.module);
 	}
    }

@@ -53,7 +53,7 @@ class SimplePlayer extends Sprite {
 
    public function onTrackerLoading(e:TrackerLoadingEvent) {
 	if (e.state==TrackerLoadingEvent.LOADED)
-		Player.Start(ee.module);
+		Player.Start(e.module);
    }
 
 
