@@ -41,6 +41,7 @@ import flash.text.TextField;
 class Profiler {
   static var entertime:Hash<Int>=new Hash();
   static var totaltime:Hash<Int>=new Hash();
+  static var called:Hash<Int>=new Hash();
   static var profiling_started=0;
 
   inline static var UNPROFILED="(unprofiled time) ";
@@ -59,6 +60,7 @@ class Profiler {
 	   var m=pos.className+"."+pos.methodName;
 	   var t=flash.Lib.getTimer();
 	   entertime.set(m,t);
+	   called.set(m,called.get(m)+1);
 	}
   }
 
@@ -87,7 +89,7 @@ class Profiler {
 	   var ms=totaltime.get(m);
 	   t+=m;
 	   for (i in m.length ... longest) t+=" ";
-	   t+=""+ms+"ms/"+Math.round(100*ms/totalms)+"%\n";
+	   t+=""+ms+"ms/"+Math.round(100*ms/totalms)+"% "+called.get(m)+"\n";
 	}
 	var unprofiled=alltime-totalms;
 	t+="\n"+UNPROFILED;

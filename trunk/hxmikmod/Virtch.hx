@@ -140,7 +140,6 @@ class Virtch {
    }
 
    static function MixStereoNormal(srci:Int,desti:Int,index:Index_t,increment:Index_t,todo:Int):Index_t {
-	Profiler.ENTER();
         var lvolsel = vnf.lvolsel/MAXVOL_FACTOR;
         var rvolsel = vnf.rvolsel/MAXVOL_FACTOR;
 	var sample;
@@ -153,7 +152,6 @@ class Virtch {
 		Mem.setFloat(desti,Mem.getFloat(desti)+lvolsel*sample); desti+=4;
 		Mem.setFloat(desti,Mem.getFloat(desti)+rvolsel*sample); desti+=4;
 	}
-	Profiler.LEAVE();
 	return index;
    }
 
@@ -226,6 +224,7 @@ class Virtch {
                 return;
         }
 
+	Profiler.ENTER();
 
         /* update the 'current' index so the sample loops, or stops playing if it
            reached the end of the sample */
@@ -311,6 +310,8 @@ class Virtch {
                 todo -= done;
                 ptri += done;
         }
+
+	Profiler.LEAVE();
    }
 
 
