@@ -118,7 +118,7 @@ class MultiPlayer extends Sprite {
 	var v=e.voice;
 	try {
 	   if (indicators[v]==null) {
-	      var i=indicators[v]=new SampleIndicator();
+	      var i=indicators[v]=new SampleIndicator(v);
 	      addChild(i);
 	      i.x=4;
 	      i.y=v*33+4;

@@ -26,6 +26,7 @@ import hxmikmod.event.TrackerEventDispatcher;
 import flash.utils.ByteArray;
 import flash.events.MouseEvent;
 import flash.text.TextField;
+import hxmikmod.Mem;
 
 class Osc extends Sprite {
    var bm:Bitmap;
@@ -57,26 +58,28 @@ class Osc extends Sprite {
         	TrackerEventDispatcher.removeEventListener(TrackerAudioBufferEvent.TYPE,onBuffer);
 	} else {
         	TrackerEventDispatcher.addEventListener(TrackerAudioBufferEvent.TYPE,onBuffer);
+		bmd.fillRect(new flash.geom.Rectangle(0,0,400,10),0x550000);
+		bmd.fillRect(new flash.geom.Rectangle(0,110,400,10),0x550000);
 	}
    }
 
 
    function onBuffer(e:TrackerAudioBufferEvent) {
 	Profiler.ENTER();
-	var buf=e.buffer;
-	var bufsize=buf.position;
+	var addr=e.addr;
+	var samples=e.samples;
+	var pos=e.pos;
+	var mult=400/e.audiobufsize;
+	var left=Std.int(pos*mult);
+	var right=Std.int((pos+samples)*mult);
 	bmd.lock();
-        bmd.fillRect(bmd.rect, 0x005500);
-	bmd.fillRect(new flash.geom.Rectangle(0,0,400,10),0x550000);
-	bmd.fillRect(new flash.geom.Rectangle(0,110,400,10),0x550000);
-	for (x in 0 ... Std.int(width)) {
-	   buf.position=Std.int(bufsize*x/width)&0xfffffff8;
-	   var y=(buf.readFloat()+buf.readFloat())/2;
-	   var yi=Std.int(60+50*y);
-	   bmd.setPixel(x,yi,0xffffff);
+	bmd.fillRect(new flash.geom.Rectangle(left,10,width*samples/e.audiobufsize,100),0x00a000);
+	for (x in left ... right) {
+	   var xa=addr+(Std.int((x-left)/mult)<<3);
+	   var y=60+Std.int((Mem.getFloat(xa+=4)+Mem.getFloat(xa))*25);
+	   bmd.setPixel(x,y,0xffffff);
 	}
 	bmd.unlock();
-	buf.position=bufsize;
 	Profiler.LEAVE();
    }
 

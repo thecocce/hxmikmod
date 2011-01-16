@@ -51,11 +51,11 @@ class TrackerVoiceEvent extends TrackerEvent {
 
 class TrackerSamplePosEvent extends TrackerEvent {
    public var voice:Int;
-   public var pos:Int;
+   public var pos:Float;
    public var increment:Float;
    inline public static var TYPE="TrackerSamplePosEvent";
 
-   public function new(voice:Int, pos:Int, increment:Float) {
+   public function new(voice:Int, pos:Float, increment:Float) {
 	super(TYPE);
 	this.voice=voice; this.pos=pos; this.increment=increment;
    }
@@ -93,12 +93,26 @@ class TrackerNoteEvent extends TrackerEvent {
 }
 
 
+// This is called when a block of data is sent to the audio output device.
+// It is not guaranteed to be size complete SampleEvent buffer.
+// "addr" is a byte index to the Mem.buf bytebuffer,
+// "samples" is the count of stereo samples (dual-Floats) written,
+// "pos" is how many stereo samples was written before this block
+// "audiobufsize" is the total size of the SampleEvent.data buffer (constant)
+
+
 class TrackerAudioBufferEvent extends TrackerEvent {
    inline public static var TYPE="TrackerAudioBufferEvent";
-   public var buffer:ByteArray;
+   public var addr:Int;
+   public var samples:Int;
+   public var pos:Int;
+   public var audiobufsize:Int;
 
-   public function new(buffer:ByteArray) {
+   public function new(addr:Int,samples:Int,pos:Int,audiobufsize:Int) {
 	super(TYPE);
-	this.buffer=buffer;
+	this.addr=addr;
+	this.samples=samples;
+	this.pos=pos;
+	this.audiobufsize=audiobufsize;
    }
 }

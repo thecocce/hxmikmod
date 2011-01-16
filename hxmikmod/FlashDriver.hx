@@ -51,7 +51,6 @@ class FlashDriver extends MDriver {
 		//if (channel!=null)
 		//   TrackerEventDispatcher.setLatency(event.position/44.1-channel.position);
                 Virtch.WriteSamples(event.data);
-		TrackerEventDispatcher.dispatchEvent(new TrackerAudioBufferEvent(event.data));
            } catch(e:Dynamic) { trace(e); }
 	}
 
@@ -82,8 +81,8 @@ class FlashDriver extends MDriver {
         }
 
         override public function Reset():Bool {
-          trace("Reset");
-          return false;
+	  Virtch.VC_Reset();
+          return true;
         }
 
         override public function SetNumVoices():Bool {

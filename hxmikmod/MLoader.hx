@@ -393,6 +393,7 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"setting numvoice
 	}
 
 
+
         function completeHandler(e:TimerEvent):Void {
 	   var prog=SLoader.SL_LoadSamples();
 	   switch(prog) {
@@ -401,7 +402,7 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"setting numvoice
 	   	case -1: // failed
                    MMio._mm_iobase_revert();
                    MLoader.Player_Free_internal(mf);
-		   TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(-1,"Loading failed."));
+		   TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(-1,"Loading failed, err="+MMio._mm_errno));
 	   	case 1: // done loading
         	   if (Player.Init(mf)) {
                   	MMio._mm_iobase_revert();
