@@ -27,6 +27,7 @@ import hxmikmod.VINFO;
 import flash.utils.ByteArray;
 import hxmikmod.event.TrackerEvent;
 import hxmikmod.event.TrackerEventDispatcher;
+import flash.utils.Endian;
 
 
 // Index_t is the type used for mixing samples at
@@ -36,27 +37,12 @@ import hxmikmod.event.TrackerEventDispatcher;
 typedef Index_t=Int;    //Float or Int;
 
 
-// Using an array of a class like this for the audio mixing
-// buffer is noticeably faster than a Float array. Reason?
-// Nobody knows. On the other hand putting e.g. four samples
-// in the same object doesn't give noticeable benefit. --j.
-
-class Sample {
-   public var left:Float;
-   public var right:Float;
-   public function clear() { left=right=0; }
-   public function new() {
-   }
-}
-
 
 
 class Virtch {
    inline static var MAXVOL_FACTOR=(1<<9);
    inline static var REVERBERATION=11000;
    inline static var TICKLSIZE=8192;
-   inline static var TICKWSIZE=(TICKLSIZE*2);
-   inline static var TICKBSIZE=(TICKWSIZE*2);
    
    inline static var FRACBITS=12;	// If Index_t=Float, set this to 0. Otherwise 12..13
 					// e.g. Yuki Satellites won't work with 13 because of long samples
@@ -82,23 +68,29 @@ class Virtch {
    }
 
 
+/*  
+
   // use this version if Index_t=Float
-  /*
+
   inline static function greaterOrEqual(a:Float, b:Float):Bool {
 	return (a>=b);
   }
-  */
+  
+*/
+
 
   // These convert between fractional sample index and
   // an integer. If Index_t=Float, it's just a matter of
   // Float->Int casting. For FFP it's a bit shift operation.
 
    inline public static function indexToSample(si:Index_t):Int {
-	return FRACBITS==0 ? Std.int(si) : cast(si)>>FRACBITS;
+	return FRACBITS==0 ? Std.int(si)<<2 : (cast(si)>>(FRACBITS-2))&0xfffffffc;	// FRACBITS-2 because it's a byte index to a Float buf
    }
+
    inline public static function indexToSampleF(si:Index_t):Float {
 	return FRACBITS==0 ? si : si/(1<<FRACBITS);
    }
+
    inline public static function sampleToIndex(ti:Int):Index_t {
 	return (ti<<FRACBITS);
    }
@@ -115,22 +107,21 @@ class Virtch {
    static var idxsize:Index_t;
    static var idxlpos:Index_t;
    static var idxlend:Index_t;
-   static var vc_tickbuf:Array<Sample>; //<Float>; ?
+   static var vc_tickbuf=-1;
    static var vc_mode:Int;
 
-   public static var Samples:Array<Array<SWORD>>;
+   public static var Samples:Array<Int>;  // membuf index of sampledata start
    public static var SampleNames:Array<String>;	// jouko debug addition
 
    static var hqmix=true;  // clickbuf, rampvol ... not really used at the moment
 
 
    public static function VC_Init():Bool {
-	var i:Int;
 	Samples=new Array();
+	for (i in 0 ... MAXSAMPLEHANDLES) Samples[i]=-1;
 	SampleNames=new Array();
-	if (vc_tickbuf==null) {
-		vc_tickbuf=new Array<Sample>();  //<Float>();
-		for (i in 0 ... (TICKLSIZE+32)) vc_tickbuf[i]=new Sample();
+	if (vc_tickbuf==-1) {
+		vc_tickbuf=Mem.alloc((TICKLSIZE+32)<<3);
 	}
 	//vc_memory=0; ???
 	MDriver.md_mode |= Defs.DMODE_INTERP;
@@ -139,18 +130,30 @@ class Virtch {
    }
 
 
-   static function MixStereoNormal(srce:Array<SWORD>,desti:Int,index:Index_t,increment:Index_t,todo:Int):Index_t {
+   // before loading a new song, free sample handles and memory
+
+   public static function VC_Reset() {
+	for (i in 0 ... MAXSAMPLEHANDLES) Samples[i]=-1;
+	// Dump everything in the flash.Memory buffer after tickbuf
+	// i.e. free samples. TODO a smarter way
+	Mem.buf.length=(TICKLSIZE+32)<<3;
+   }
+
+   static function MixStereoNormal(srci:Int,desti:Int,index:Index_t,increment:Index_t,todo:Int):Index_t {
 	Profiler.ENTER();
-        var lvolsel = vnf.lvolsel;
-        var rvolsel = vnf.rvolsel;
+        var lvolsel = vnf.lvolsel/MAXVOL_FACTOR;
+        var rvolsel = vnf.rvolsel/MAXVOL_FACTOR;
 	var sample;
 
+	desti<<=3;
+	desti+=vc_tickbuf;
 	for (i in 0 ... todo) {
-		sample=srce[indexToSample(index)];
+		sample=Mem.getFloat(srci+indexToSample(index));
                 index += increment;
-		vc_tickbuf[desti].left +=lvolsel*sample;
-		vc_tickbuf[desti++].right +=rvolsel*sample;
+		Mem.setFloat(desti,Mem.getFloat(desti)+lvolsel*sample); desti+=4;
+		Mem.setFloat(desti,Mem.getFloat(desti)+rvolsel*sample); desti+=4;
 	}
+	Profiler.LEAVE();
 	return index;
    }
 
@@ -200,17 +203,11 @@ class Virtch {
 */
 
 
-   static function Mix32toFP(dste:ByteArray, count:Int) {
+   static function Mix32toFP(out:ByteArray,count:Int) {
 	Profiler.ENTER();
-	var x1:Float;
-	var x2:Float;
-
-	for (i in 0 ... count) {
-		x1=vc_tickbuf[i].left*((1.0/32768.0)/MAXVOL_FACTOR);
-		x2=vc_tickbuf[i].right*((1.0/32768.0)/MAXVOL_FACTOR);
-		dste.writeFloat(x1);
-		dste.writeFloat(x2);
-        }
+	out.endian=Endian.LITTLE_ENDIAN;
+	out.writeBytes(Mem.buf,vc_tickbuf,count<<3);
+	Profiler.LEAVE();
    }
 
 
@@ -220,10 +217,10 @@ class Virtch {
    static function AddChannel(todo:Int) {
 	var end:Index_t;
 	var done:Int;
-	var s:Array<SWORD>;
+	var s:Int;		// Mem.buf index
 	var ptri=0;
 
-        if((s=Samples[vnf.handle])==null) {
+        if((s=Samples[vnf.handle])==-1) {
                 vnf.current=0; vnf.active=false;
                 vnf.lastvalL = vnf.lastvalR = 0;
                 return;
@@ -314,17 +311,15 @@ class Virtch {
                 todo -= done;
                 ptri += done;
         }
-}
+   }
 
 
 
 
 
-
-
-   static function clearbuf(len:Int) {
+   static function clearTickBuf(len:Int) {
 	Profiler.ENTER();
-	for (i in 0 ... len) vc_tickbuf[i].clear();
+	Mem.clearFloat(vc_tickbuf,len<<3);
 	Profiler.LEAVE();
    }
 
@@ -342,7 +337,7 @@ class Virtch {
         /* Find empty slot to put sample address in */
 	t=MAXSAMPLEHANDLES;
         for(handle in 0 ... MAXSAMPLEHANDLES)
-                if(Samples[handle]==null) { t=handle; break; }
+                if(Samples[handle]==-1) { t=handle; break; }
 	handle=t;
         if(handle==MAXSAMPLEHANDLES) {
                 MMio._mm_errno = Defs.MMERR_OUT_OF_HANDLES;
@@ -368,7 +363,7 @@ class Virtch {
                 return -1;
         }
 	*/
-	Samples[handle]=new Array<SWORD>();
+	Samples[handle]=Mem.alloc((length+20)<<2);
 	SampleNames[handle]=s.samplename;
 
         /* read sample into buffer */
@@ -376,18 +371,19 @@ class Virtch {
                 return -1;
 
         /* Unclick sample */
-
         if(s.flags & Defs.SF_LOOP!=0) {
                 if(s.flags & Defs.SF_BIDI!=0)
                         for(t in 0 ... 16)
-                                Samples[handle][loopend+t]=Samples[handle][(loopend-t)-1];
+				Mem.setFloat(Samples[handle]+((loopend+t)<<2),
+					Mem.getFloat(Samples[handle]+((loopend-t-1)<<2)));
                 else
-                        for(t in 0 ... 16)
-                                Samples[handle][loopend+t]=Samples[handle][t+loopstart];
+                        for(t in 0 ... 16) {
+				Mem.setFloat(Samples[handle]+((loopend+t)<<2),
+					Mem.getFloat(Samples[handle]+((loopstart+t)<<2)));
+			}
         } else
                 for(t in 0 ... 16)
-                        Samples[handle][t+length]=0;
-
+			Mem.setFloat(Samples[handle]+((t+length)<<2),0);
         return handle;
    }
 
@@ -400,6 +396,7 @@ class Virtch {
 	var pan:Int;
 	var vol:Int;
 	var todo=buffer_size;
+	var written=0;
 	
 	while(todo>0) {
 	   if (tickleft==0) {
@@ -412,7 +409,7 @@ class Virtch {
 	   while(left>0) {
 		portion = Std.int(Math.min(left, samplesthatfit));
 		if (portion<=0) { return; }	// ?
-		clearbuf(portion);
+		clearTickBuf(portion);
 		for (t in 0 ... vc_softchn) {
 			vnf=vinf[t];
 			if (vnf.kick!=0) {
@@ -444,17 +441,12 @@ class Virtch {
 			   }
 			   idxlpos=sampleToIndex(vnf.reppos); 
 			   AddChannel(portion);
-			   TrackerEventDispatcher.dispatchEventDelay(new hxmikmod.event.TrackerSamplePosEvent(t,indexToSample(vnf.current),indexToSampleF(vnf.increment)),MPlayer.pf.sngtime-MPlayer.pf.audiobufferstart);
+			   TrackerEventDispatcher.dispatchEventDelay(new hxmikmod.event.TrackerSamplePosEvent(t,indexToSampleF(vnf.current),indexToSampleF(vnf.increment)),MPlayer.pf.sngtime-MPlayer.pf.audiobufferstart);
 			}
 		}
-			/*
-                        if(md_reverb) {
-                                if(md_reverb>15) md_reverb=15;
-                                MixReverb(vc_tickbuf,portion);
-                        }
-			*/
-
-		Mix32toFP(buf, portion);
+		Mix32toFP(buf,portion);
+		TrackerEventDispatcher.dispatchEvent(new TrackerAudioBufferEvent(vc_tickbuf,portion,written,buffer_size));
+		written+=portion;
                 left-=portion;
 	   }
 	}
@@ -463,7 +455,6 @@ class Virtch {
 
    public static function VC_PlayStart():Bool {
 	MDriver.md_mode |= Defs.DMODE_INTERP;
-        //samplesthatfit = TICKLSIZE; //>>1;
 	tickleft=0;
 	return false;
    }
@@ -499,7 +490,6 @@ class Virtch {
 
         //if(vinf) free(vinf);
 	vinf=null;
-        //if(!(vinf=_mm_calloc(sizeof(VINFO),vc_softchn))) return 1;
 	vinf=new Array<VINFO>();
 	hqmix=(vc_softchn <= 8);
 

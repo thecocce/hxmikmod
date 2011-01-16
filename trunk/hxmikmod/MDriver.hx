@@ -440,6 +440,10 @@ class MDriver {
         return false;
    }
 
+   public static function _mm_reset() {
+	md_driver.Reset();
+   }
+
 
    public static function _mm_init(params:Hash<Dynamic>):Bool {
         var t:UWORD;

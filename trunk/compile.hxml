@@ -1,4 +1,4 @@
 -swf MultiPlayer.swf
 -swf-version 10
--swf-header 600:600:25:808080
+-swf-header 850:500:20:808080
 -main MultiPlayer

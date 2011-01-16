@@ -27,6 +27,8 @@ import hxmikmod.MMio;
 import flash.utils.ByteArray;
 import hxmikmod.event.TrackerEvent;
 import hxmikmod.event.TrackerEventDispatcher;
+import hxmikmod.Mem;
+
 
 /* IT-Compressed status structure */
 class ITPACK {
@@ -59,6 +61,7 @@ class SLoader {
 	// new song
 	stage_LoadSamples=0;
 	stage_DitherSamples2=0;
+	MDriver._mm_reset();
    }
 
    public static function SL_Init(s:SAMPLOAD):Bool {
@@ -166,7 +169,7 @@ class SLoader {
    }
 
 
-   public static function SL_Load(buffer:Array<SWORD>,smp:SAMPLOAD,length:ULONG):Bool {
+   public static function SL_Load(buffer:Int,smp:SAMPLOAD,length:ULONG):Bool {
         return SL_LoadInternal(buffer,smp.infmt,smp.outfmt,smp.scalefactor,
                                length,smp.reader,false);
    }
@@ -358,12 +361,12 @@ class SLoader {
 
 
 
-   public static function SL_LoadInternal(buffer:Array<SWORD>,infmt:UWORD,outfmt:UWORD,scalefactor:Int,length:ULONG,
+   public static function SL_LoadInternal(buffer:Int,infmt:UWORD,outfmt:UWORD,scalefactor:Int,length:ULONG,
 					reader:MREADER,dither:Bool):Bool {
 	var ptr=buffer;
 	var stodo:Int;
 	var u:Int;
-	var ptri=0;
+	var ptri=buffer;
 
 	var result:Int;
 	var c_block=0;   /* compression bytes until next block */
@@ -479,12 +482,15 @@ class SLoader {
 
                 if(outfmt & Defs.SF_16BITS!=0) {
 			//trace("out 16-bit");
-                        for(t in 0 ... stodo)
-				ptr[ptri++]=sl_buffer[t];
+                        for(t in 0 ... stodo) {
+				var tmp:Float;
+				Mem.setFloat(ptri,tmp=sl_buffer[t]/32768.0); ptri+=4;
+			}
                 } else {
-			//trace("out 8-bit");
-                        for(t in 0 ... stodo)
-				ptr[ptri++]=sl_buffer[t]>>8;
+			trace("out 8-bit??? untested");
+                        for(t in 0 ... stodo) {
+				Mem.setFloat(ptri,sl_buffer[t]/128.0); ptri+=4;
+			}
                 }
         }
         return false;
@@ -504,7 +510,7 @@ class SLoader {
 
 	c2smp=null;
         if(samplist==null) return 1;
-Profiler.ENTER();
+	Profiler.ENTER();
         if((maxsize=MDriver.MD_SampleSpace(type)*1024)!=0) 
                 while(SampleTotal(samplist,type)>maxsize) {
                         /* First Pass - check for any 16 bit samples */
@@ -536,7 +542,7 @@ Profiler.ENTER();
                                         SL_HalveSample(c2smp,2);
                         }
                 }
-Profiler.LEAVE();
+		Profiler.LEAVE();
 		return 1;
 	}
 
@@ -547,7 +553,8 @@ Profiler.LEAVE();
 
    static function DitherSamples2(samplist:Array<SAMPLOAD>,type:Int):Int {
 	var si;
-Profiler.ENTER();
+	Profiler.ENTER();
+
         /* Samples dithered, now load them ! */
 	if (stage_DitherSamples2==0) {
 		var si=0;
@@ -587,7 +594,7 @@ Profiler.ENTER();
 		//si++;
         }
         FreeSampleList(samplist);
-Profiler.LEAVE();
+	Profiler.LEAVE();
         return 1;
    }
 

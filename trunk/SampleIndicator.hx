@@ -25,8 +25,10 @@ import flash.display.BitmapData;
 import flash.display.Shape;
 import flash.display.Sprite;
 import flash.text.TextField;
+import flash.events.MouseEvent;
 import hxmikmod.event.TrackerEvent;
 import hxmikmod.Virtch;
+import hxmikmod.Mem;
 
 
 
@@ -42,14 +44,16 @@ class SampleIndicator extends Sprite {
    var len:Int;
    var tf:TextField;   
    var increment:Float;
-
+   var muted:Bool;
+   var index:Int;
+   var bg:Shape;
 
    static var graphs:Hash<BitmapData>=new Hash();
    static var empty=new BitmapData(200, 30, false, 0x000030);
 
 
 
-   public function new() {
+   public function new(i:Int) {
         super();
 	bm=new Bitmap();
 	bm.bitmapData=empty;
@@ -62,16 +66,41 @@ class SampleIndicator extends Sprite {
 	tf.textColor=0xffff00;
 	tf.width=190;
 	tf.height=20;
+	bg=new Shape();
+	bg.graphics.beginFill(0x000030);
+	bg.graphics.drawRect(0,0,empty.width,empty.height);
+	bg.graphics.endFill();
+	addChild(bg);
 	addChild(bm);
 	addChild(pos);
 	addChild(tf);
+	setMuted(false);
+	index=i;
+	addEventListener(MouseEvent.CLICK,onClick);
    }
 
 
+   function onClick(e:MouseEvent) {
+	setMuted(!muted);
+   }
 
-   public function setPos(x:Int,increment:Float) {
+   function setMuted(m:Bool) {
+	muted=m;
+	try {
+	   hxmikmod.MPlayer.pf.control[index].muted=m;	// quick, dirty, etc
+	   bg.graphics.beginFill(muted?0x800000:0x000030);
+	   bg.graphics.drawRect(0,0,empty.width,empty.height);
+	   bg.graphics.endFill();
+	} catch(e:Dynamic) { }
+   }
+
+
+   public function setPos(x:Float,increment:Float) {
 	if (len==0) len=1;
-	pos.x=Std.int(width*x/len);
+	var px=width*x/len;
+	if (px<0) px=0;
+	else if (px>width) px=width;	// nonsensical values may cause long freezes
+	pos.x=px;
 	pos.y=0;
 	this.increment=empty.width*increment*44100.0/(len*30.0);
    }
@@ -80,20 +109,21 @@ class SampleIndicator extends Sprite {
 
    public function onVoicePlay(e:hxmikmod.event.TrackerVoiceEvent) {
 	var h=e.handle;
+	if (h==-1) return;
 	var data=Virtch.Samples[h];
-	if (data==null) return;
+	if (data==-1) return;
 	len=e.size;
 	tf.text=""+h+":"+Virtch.SampleNames[h];
 	var bd=graphs.get(""+h);
 	if (bd==null) {
-	  bd= new BitmapData(empty.width, empty.height, false, 0x000030);
+	  bd= new BitmapData(empty.width, empty.height, true, 0x000030);
 	  for (x in 0 ... Std.int(width)) {
 		var i=Std.int(len*x/width);
-		var y=Std.int(height/2+height*data[i]/65536);
+		var y=Std.int(height/2+height*Mem.getFloat(data+(i<<2))*0.5);
 		var col=0xffffff;
 		if (y<0) { y=0; col=0xff0000; }
 		else if (y>=Std.int(height)) { y=Std.int(height)-1; col=0xff0000; }
-        	bd.setPixel(x,y,col);
+        	bd.setPixel32(x,y,col|0xff000000);
 	  }
 	  graphs.set(""+h,bd);
         }
@@ -111,8 +141,12 @@ class SampleIndicator extends Sprite {
 		}
 		if (reppos<0) reppos=0; else if (reppos>len) reppos=len;
 		if (replen<0) replen=0; else if (reppos+replen>len) replen=len-reppos;
-		rep.width=empty.width*replen/len;
-		rep.x=empty.width*reppos/len;
+		var rw=empty.width*replen/len;
+		var rx=empty.width*reppos/len;
+		if (rx<0 || rx>width) { rx=0; }
+		if (rw<0 || rw>width) { rw=1; }
+		rep.width=rw;
+		rep.x=rx;
 	}
 	setPos(e.start,0);
    }
