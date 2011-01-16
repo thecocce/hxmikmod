@@ -226,20 +226,25 @@ class Virtch {
 
 	Profiler.ENTER();
 
+	var reverse=(vnf.flags & Defs.SF_REVERSE)!=0;
+	var loop=(vnf.flags & Defs.SF_LOOP)!=0;
+	var bidi=(vnf.flags & Defs.SF_BIDI)!=0;
+
         /* update the 'current' index so the sample loops, or stops playing if it
            reached the end of the sample */
         while(todo>0) {
 		var endpos:Index_t;
 
-                if ((vnf.flags&Defs.SF_REVERSE)!=0) {
+                if (reverse) {
                         /* The sample is playing in reverse */
-                        if ((vnf.flags&Defs.SF_LOOP)!=0 && !greaterOrEqual(vnf.current,idxlpos)) {
+                        if (loop && !greaterOrEqual(vnf.current,idxlpos)) {
                                 /* the sample is looping and has reached the loopstart index */
-                                if((vnf.flags&Defs.SF_BIDI)!=0) {
+                                if(bidi) {
                                         /* sample is doing bidirectional loops, so 'bounce' the
                                            current index against the idxlpos */
                                         vnf.current = idxlpos+(idxlpos-vnf.current);
-                                        vnf.flags &= ~Defs.SF_REVERSE;
+                                        //vnf.flags &= ~Defs.SF_REVERSE;
+					reverse=false;
                                         vnf.increment = -vnf.increment;
                                 } else
                                         /* normal backwards looping, so set the current position to
@@ -255,13 +260,13 @@ class Virtch {
                         }
                 } else {
                         /* The sample is playing forward */
-                        if ((vnf.flags&Defs.SF_LOOP)!=0 &&
-                            (greaterOrEqual(vnf.current,idxlend))) {
+                        if (loop && (greaterOrEqual(vnf.current,idxlend))) {
                                 /* the sample is looping, check the loopend index */
-                                if ((vnf.flags&Defs.SF_BIDI)!=0) {
+                                if (bidi) {
                                         /* sample is doing bidirectional loops, so 'bounce' the
                                            current index against the idxlend */
-                                        vnf.flags |= Defs.SF_REVERSE;
+                                        //vnf.flags |= Defs.SF_REVERSE;
+					reverse=true;
                                         vnf.increment = -vnf.increment;
                                         vnf.current = idxlend-(vnf.current-idxlend);
                                 } else
@@ -279,8 +284,7 @@ class Virtch {
                         }
                 }
 
-                end=(vnf.flags&Defs.SF_REVERSE)!=0?(vnf.flags&Defs.SF_LOOP)!=0?idxlpos:0:
-                     (vnf.flags&Defs.SF_LOOP)!=0?idxlend:idxsize;
+                end=reverse?(loop?idxlpos:0):(loop?idxlend:idxsize);
                 /* if the sample is not blocked... */
                 if (end==vnf.current || vnf.increment==0)
                         done=0;
@@ -310,6 +314,8 @@ class Virtch {
                 todo -= done;
                 ptri += done;
         }
+	if (reverse) vnf.flags |= Defs.SF_REVERSE;
+	else vnf.flags &= ~Defs.SF_REVERSE;
 
 	Profiler.LEAVE();
    }
