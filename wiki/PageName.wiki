@@ -1,0 +1,13 @@
+#summary Embedding a module in a SWF file
+
+=How to embed=
+
+Example: [http://zulu-51.nebula.fi/~modplayer/hxMikMod/SimplePlayer.swf here](a 74k file playing a module by Radix).
+
+The easiest way for haXe is to use the haxe.Resource API as described [http://haxe.org/doc/advanced/resources here].
+
+{{{
+
+Player.LoadBytes(haxe.Resource.getBytes("tune_resource_id").getData(),32,false);
+
+}}}
