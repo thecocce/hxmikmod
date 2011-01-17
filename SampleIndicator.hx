@@ -97,9 +97,9 @@ class SampleIndicator extends Sprite {
 
    public function setPos(x:Float,increment:Float) {
 	if (len==0) len=1;
-	var px=width*x/len;
+	var px=empty.width*x/len;
 	if (px<0) px=0;
-	else if (px>width) px=width;	// nonsensical values may cause long freezes
+	else if (px>empty.width) px=empty.width;	// nonsensical values may cause long freezes
 	pos.x=px;
 	pos.y=0;
 	this.increment=empty.width*increment*44100.0/(len*30.0);
@@ -117,8 +117,8 @@ class SampleIndicator extends Sprite {
 	var bd=graphs.get(""+h);
 	if (bd==null) {
 	  bd= new BitmapData(empty.width, empty.height, true, 0x000030);
-	  for (x in 0 ... Std.int(width)) {
-		var i=Std.int(len*x/width);
+	  for (x in 0 ... Std.int(empty.width)) {
+		var i=Std.int(len*x/empty.width);
 		var y=Std.int(height/2+height*Mem.getFloat(data+(i<<2))*0.5);
 		var col=0xffffff;
 		if (y<0) { y=0; col=0xff0000; }
@@ -143,8 +143,8 @@ class SampleIndicator extends Sprite {
 		if (replen<0) replen=0; else if (reppos+replen>len) replen=len-reppos;
 		var rw=empty.width*replen/len;
 		var rx=empty.width*reppos/len;
-		if (rx<0 || rx>width) { rx=0; }
-		if (rw<0 || rw>width) { rw=1; }
+		if (rx<0 || rx>empty.width) { rx=0; }
+		if (rw<0 || rw>empty.width) { rw=1; }
 		rep.width=rw;
 		rep.x=rx;
 	}
