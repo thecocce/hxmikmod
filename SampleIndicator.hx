@@ -52,6 +52,10 @@ class SampleIndicator extends Sprite {
    static var empty=new BitmapData(200, 30, false, 0x000030);
 
 
+   public static function reset() {
+	graphs=new Hash();
+   }
+
 
    public function new(i:Int) {
         super();

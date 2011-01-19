@@ -2059,6 +2059,7 @@ class MPlayer {
 	var a:MP_CONTROL;	// ptr
 	var aout:MP_VOICE;	// ptr
 	var explicitslides:Bool;
+Profiler.ENTER();
         for (channel in 0 ... mod.numchn) {
                 a=mod.control[channel];
                 if ((aout=a.slave)!=null) {
@@ -2097,7 +2098,7 @@ class MPlayer {
                                 a.main.outvolume=0;
                 }
         }
-
+Profiler.LEAVE();
    }
 
 
@@ -2175,6 +2176,7 @@ class MPlayer {
 	var a:MP_CONTROL;
 	var c:UBYTE;
 
+Profiler.ENTER();
 	for (channel in 0 ... mod.numchn) {
                 a=mod.control[channel];
                 if (a.row==-1) continue;
@@ -2187,6 +2189,7 @@ class MPlayer {
                         } else
                                 MUnitrk.UniSkipOpcode();
         }
+Profiler.LEAVE();
    }
 
 
@@ -2481,7 +2484,6 @@ class MPlayer {
 
 
 
-
    /* Setup module and NNA voices */
    static function pt_SetupVoices(mod:MODULE) {
 	var channel:SWORD;
@@ -2715,8 +2717,10 @@ class MPlayer {
 	var channel:SWORD;
         var max_volume:Int;
 
+
 //trace("pf.forbid="+(pf==null?true:pf.forbid)+" of="+MLoader.of+" pf==of: "+(pf==MLoader.of)+" pf.name="+(pf==null?"-":pf.songname)+" of.name="+(MLoader.of==null?"-":MLoader.of.songname));
         if (pf==null||pf.forbid||pf.sngpos>=pf.numpos) return;
+
 	Profiler.ENTER();
 
         /* update time counter (sngtime is in milliseconds (in fact 2^-10)) */
@@ -2785,15 +2789,16 @@ class MPlayer {
         else
                 max_volume=128;
 
+	Profiler.LEAVE();
         pt_EffectsPass1(pf);
         if (pf.flags&Defs.UF_NNA!=0)
                 pt_NNA(pf);
         pt_SetupVoices(pf);
         pt_EffectsPass2(pf);
-	Profiler.LEAVE();
         /* now set up the actual hardware channel playback information */
         pt_UpdateVoices(pf, max_volume);
    }
+
 
    public static function Player_Init_internal(mod:MODULE) {
         for (t in 0 ... mod.numchn) {

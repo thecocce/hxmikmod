@@ -145,6 +145,7 @@ class MultiPlayer extends Sprite {
 	if (e.state==TrackerLoadingEvent.LOADED) {
 		Profiler.reset();
 		// new song, reset sample graphics
+		SampleIndicator.reset();
 		for (i in indicators) if (i!=null) removeChild(i);
 		indicators=new Array();
 		for (i in 0 ... e.module.numchn) onVoicePlay(new TrackerVoiceEvent(i,-1,0,0,0,0,0));
