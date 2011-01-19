@@ -1,15 +1,15 @@
 #summary Links to related resources
 
 ==MikMod==
-  *[http://mikmod.raphnet.net/ The original MikMod site]
+  * [http://mikmod.raphnet.net/ The original MikMod site]
 
 ==Music==
-  *[http://modarchive.org/ The Mod Archive]
-  *[ftp://ftp.modland.com/ Modland (ftp)]
-  *[http://www.mirsoft.info/gamemods.php World of Game Mods]
+  * [http://modarchive.org/ The Mod Archive]
+  * [ftp://ftp.modland.com/ Modland (ftp)]
+  * [http://www.mirsoft.info/gamemods.php World of Game Mods]
 
 
 ==Other players==
-  *[http://8bitboy.popforge.de/ 8bitboy]
-  *[http://unitzeroone.com/labs/flashModPlug/ flashModPlug]
-  *[https://github.com/badsector/fmp FMP]
+  * [http://8bitboy.popforge.de/ 8bitboy]
+  * [http://unitzeroone.com/labs/flashModPlug/ flashModPlug]
+  * [https://github.com/badsector/fmp FMP]
