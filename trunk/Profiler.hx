@@ -45,8 +45,11 @@ class Profiler {
   static var profiling_started=0;
 
   inline static var UNPROFILED="(unprofiled time) ";
-  inline static var PROFILER_ENABLED=true;	// compiler SHOULD optimize all overhead away if disabled?
-
+#if PROFILING
+  inline static var PROFILER_ENABLED=true;
+#else
+  inline static var PROFILER_ENABLED=false;	// compiler SHOULD optimize all overhead away if disabled?
+#end
 
   public static function reset() {
 	totaltime=new Hash();

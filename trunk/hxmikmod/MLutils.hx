@@ -78,8 +78,6 @@ class MLutils {
 
    /* handles S3M and IT orders */
    public static function S3MIT_CreateOrders(curious:Bool) {
-        //int t;
-        
 	MLoader.of.numpos = 0;
 	for (i in 0 ... poslookupcnt) MLoader.of.positions[i]=0;
         //memset(of.positions,0,poslookupcnt*sizeof(UWORD));

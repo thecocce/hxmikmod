@@ -63,23 +63,28 @@ class Osc extends Sprite {
 	}
    }
 
+   var bgcol:Bool;
 
    function onBuffer(e:TrackerAudioBufferEvent) {
 	Profiler.ENTER();
 	var addr=e.addr;
-	var samples=e.samples;
-	var pos=e.pos;
 	var mult=400/e.audiobufsize;
-	var left=Std.int(pos*mult);
-	var right=Std.int((pos+samples)*mult);
+	var left=Std.int((e.startpos>>3)*mult);
+	var right=Std.int((e.endpos>>3)*mult);
+	var savepos=addr.position;
 	bmd.lock();
-	bmd.fillRect(new flash.geom.Rectangle(left,10,width*samples/e.audiobufsize,100),0x00a000);
+	bmd.fillRect(new flash.geom.Rectangle(left,10,right-left,100),bgcol?0x00a000:0x005000);
+	//bgcol=!bcol;	// debug: show tickbuf change
 	for (x in left ... right) {
-	   var xa=addr+(Std.int((x-left)/mult)<<3);
-	   var y=60+Std.int((Mem.getFloat(xa+=4)+Mem.getFloat(xa))*25);
+	   addr.position=e.startpos+(Std.int((x-left)/mult)<<3);
+	   var f=addr.readFloat();
+	   f+=addr.readFloat();
+	   var y=60+Std.int(f*25);
+	   if (y<10) y=10; else if (y>110) y=110;
 	   bmd.setPixel(x,y,0xffffff);
 	}
 	bmd.unlock();
+	addr.position=savepos;
 	Profiler.LEAVE();
    }
 

@@ -48,10 +48,8 @@ class URLLoader extends flash.net.URLLoader {
 
 
    function onComplete(event:Event) {
-     try {
         removeEventListener(Event.COMPLETE,onComplete);
         var m=Player.LoadBytes(data,32,false);
-     } catch(e:Dynamic) { trace(e); }
    }
 
    function onError(event:IOErrorEvent) {

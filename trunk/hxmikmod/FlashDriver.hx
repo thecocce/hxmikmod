@@ -47,11 +47,9 @@ class FlashDriver extends MDriver {
 
 
 	function onSampleData(event:SampleDataEvent):Void {
-           try {
 		//if (channel!=null)
 		//   TrackerEventDispatcher.setLatency(event.position/44.1-channel.position);
                 Virtch.WriteSamples(event.data);
-           } catch(e:Dynamic) { trace(e); }
 	}
 
 

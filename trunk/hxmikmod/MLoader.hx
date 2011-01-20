@@ -25,6 +25,7 @@ import hxmikmod.SAMPLE;
 import hxmikmod.Types;
 import hxmikmod.event.TrackerEvent;
 import hxmikmod.event.TrackerEventDispatcher;
+import hxmikmod.Mem;
 import flash.utils.Timer;
 import flash.events.TimerEvent;
 import flash.utils.ByteArray;
@@ -106,7 +107,7 @@ class MLoader {
         MMio._mm_iobase_setcur(modreader);
 
 	TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"initializing..."));
-
+	Mem.freeAll();
         /* Try to find a loader that recognizes the module */
 	for (tryloader in loaders) {	// firstloader ...
                 MMio._mm_rewind(modreader);
@@ -162,7 +163,6 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...2"));
                 return false; //null;
         }
 
-TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...3"));
         if(!ML_LoadSamples()) {
                 ML_FreeEx(of);
                 if(MMio._mm_errorhandler!=null) MMio._mm_errorhandler();
@@ -170,7 +170,6 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...3"));
                 return false; //null;
         }
 
-TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...4"));
         if((mf=ML_AllocUniMod())==null) {
                 ML_FreeEx(of);
                 MMio._mm_rewind(modreader);MMio._mm_iobase_revert();
@@ -178,7 +177,6 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...4"));
                 return false; //null;
         }
 
-TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...5"));
         /* If the module doesn't have any specific panning, create a
            MOD-like panning, with the channels half-separated. */
         if ((of.flags & Defs.UF_PANNING)==0)
@@ -189,7 +187,6 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...5"));
         //memcpy(mf,&of,sizeof(MODULE));
 	mf=of;	// ???
 
-TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...6"));
         if(maxchan>0) {
                 if((mf.flags&Defs.UF_NNA)==0&&(mf.numchn<maxchan))
                         maxchan = mf.numchn;
@@ -199,7 +196,6 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"loading...6"));
 
                 if(maxchan<mf.numchn) mf.flags |= Defs.UF_NNA;
 
-TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"setting numvoices: "+maxchan));
                 if(MDriver.MikMod_SetNumVoices_internal(maxchan,-1)) {
                         MMio._mm_iobase_revert();
                         Player_Free(mf);
@@ -253,7 +249,7 @@ TrackerEventDispatcher.dispatchEvent(new TrackerLoadingEvent(0,"setting numvoice
                 MMio._mm_errno=Defs.MMERR_NOT_A_MODULE;
                 return false;
         }
-	of.tracks=new Array<Array<UBYTE>>();
+	of.tracks=new Array<MEMPTR>();
         //if(!(of.tracks=(UBYTE **)_mm_calloc(of.numtrk,sizeof(UBYTE *)))) return 0;
         return (of.tracks!=null);
    }

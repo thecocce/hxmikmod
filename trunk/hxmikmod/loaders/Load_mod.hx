@@ -28,6 +28,7 @@ import hxmikmod.Defs;
 import hxmikmod.MUnitrk;
 import hxmikmod.MLutils;
 import hxmikmod.MODULE;
+import hxmikmod.Mem;
 
 
 
@@ -282,11 +283,10 @@ class Load_mod extends MLoader {
 
 
 
-   static function ConvertTrack(n:Array<MODNOTE>,ni:Int, numchn:Int):Array<UBYTE> {
+   static function ConvertTrack(n:Array<MODNOTE>,ni:Int, numchn:Int):MEMPTR {
 	var t:Int;
         var lasteffect = 0x10;        /* non existant effect */
 
-//Player.Log("ConvertTrack ni="+ni);
         MUnitrk.UniReset();
         for (t in 0 ... 64) {
                 lasteffect = ConvertNote(n[ni],lasteffect);
@@ -328,7 +328,7 @@ class Load_mod extends MLoader {
 				//trace("pat="+t+" note="+s+" a="+patbuf[s].a+" b="+patbuf[s].b+" c="+patbuf[s].c+" d="+patbuf[s].d);
                         }
                         for (s in 0 ... MLoader.of.numchn) {
-                                if (null==(MLoader.of.tracks[tracks++] = ConvertTrack(patbuf, s, MLoader.of.numchn)))
+                                if (0==(MLoader.of.tracks[tracks++] = ConvertTrack(patbuf, s, MLoader.of.numchn)))
                                         return false;
 				//trace("track "+(tracks-1)+": "+MLoader.of.tracks[tracks-1]);
 			}

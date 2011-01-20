@@ -27,6 +27,12 @@ import flash.utils.ByteArray;
 import flash.utils.Endian;
 
 
+// MEMPTR is an offset in the Alchemy mem ops block
+// i.e. Int, but typedef'ed to help readability
+
+typedef MEMPTR=Int;
+
+
 
 // This class implements sample memory acess and management in
 // a haXe/Flash optimized way.
@@ -40,25 +46,52 @@ class Mem {
 
    public static var buf=init();
    static var zerobytes:ByteArray;
+   static var last_alloc:MEMPTR;
 
+   static var map:Hash<MEMPTR>;	// map of allocated regions, just for debug
+   inline static var RESERVED_SIZE=(Virtch.TICKLSIZE+32)<<3;
 
    static function init() {
 	var ret=new ByteArray();
-	ret.length=1024;		// minimum size
+	ret.length=RESERVED_SIZE;	// Virtch tickbuf hardwired to buffer start
 	Memory.select(ret);
 	zerobytes=new ByteArray();
+	map=new Hash();
 	for (i in 0 ... 16384>>2) zerobytes.writeFloat(0);	// buffer for fast zeroing
 	return ret;
    }
 
 
+   public static function freeAll() {
+	buf.length=RESERVED_SIZE;
+   }
+
    // allocates a new area at the end of the data buffer,
    // returns the byte index to the beginning of it
 
-   public static function alloc(len:Int) {
+   public static function alloc(len:Int,?pos:haxe.PosInfos):MEMPTR {
 	var ret=buf.length;
 	buf.length+=len;
+	last_alloc=ret;
+	map.set(pos.fileName+":"+pos.lineNumber,ret);
 	return ret;
+   }
+
+   public static function free(ptr:MEMPTR) {
+	if (last_alloc==ptr) {
+	   buf.length=last_alloc;
+	   last_alloc=0;
+	} //else trace("can't free");
+   }
+
+   public static function realloc(ptr:MEMPTR,len:Int):Bool {
+	if (last_alloc!=ptr) {
+		trace("can't realloc "+ptr+", last_alloc="+last_alloc+", map: "+map);
+		setByte(-1,-1);		// throw an error for debugging
+		return false;
+	}
+	buf.length+=len;
+	return true;
    }
 
 
@@ -80,6 +113,13 @@ class Mem {
    	return Memory.signExtend16(Memory.getUI16(i));
    }
 
+   inline public static function getByte(i:MEMPTR):Int {
+	return Memory.getByte(i);
+   }
+
+   inline public static function setByte(i:MEMPTR,b:Int) {
+	Memory.setByte(i,b);
+   }
 
    // idea from http://lain.knark.net/flashmafia/Speakeasy.hx.001.txt
 

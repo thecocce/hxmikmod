@@ -24,10 +24,11 @@ import hxmikmod.Types;
 import hxmikmod.Defs;
 import hxmikmod.SAMPLE;
 import hxmikmod.VINFO;
-import flash.utils.ByteArray;
 import hxmikmod.event.TrackerEvent;
 import hxmikmod.event.TrackerEventDispatcher;
+import hxmikmod.Mem;
 import flash.utils.Endian;
+import flash.utils.ByteArray;
 
 
 // Index_t is the type used for mixing samples at
@@ -42,7 +43,7 @@ typedef Index_t=Int;    //Float or Int;
 class Virtch {
    inline static var MAXVOL_FACTOR=(1<<9);
    inline static var REVERBERATION=11000;
-   inline static var TICKLSIZE=8192;
+   inline public static var TICKLSIZE=8192;
    
    inline static var FRACBITS=12;	// If Index_t=Float, set this to 0. Otherwise 12..13
 					// e.g. Yuki Satellites won't work with 13 because of long samples
@@ -107,7 +108,7 @@ class Virtch {
    static var idxsize:Index_t;
    static var idxlpos:Index_t;
    static var idxlend:Index_t;
-   static var vc_tickbuf=-1;
+   inline static var vc_tickbuf=0;	// tickbuf always at the beginning of Mem.buf, size (TICKLSIZE+32)<<3
    static var vc_mode:Int;
 
    public static var Samples:Array<Int>;  // membuf index of sampledata start
@@ -120,9 +121,6 @@ class Virtch {
 	Samples=new Array();
 	for (i in 0 ... MAXSAMPLEHANDLES) Samples[i]=-1;
 	SampleNames=new Array();
-	if (vc_tickbuf==-1) {
-		vc_tickbuf=Mem.alloc((TICKLSIZE+32)<<3);
-	}
 	//vc_memory=0; ???
 	MDriver.md_mode |= Defs.DMODE_INTERP;
         vc_mode = MDriver.md_mode;
@@ -134,18 +132,15 @@ class Virtch {
 
    public static function VC_Reset() {
 	for (i in 0 ... MAXSAMPLEHANDLES) Samples[i]=-1;
-	// Dump everything in the flash.Memory buffer after tickbuf
-	// i.e. free samples. TODO a smarter way
-	Mem.buf.length=(TICKLSIZE+32)<<3;
    }
 
-   static function MixStereoNormal(srci:Int,desti:Int,index:Index_t,increment:Index_t,todo:Int):Index_t {
+   inline static function MixStereoNormal(srci:Int,desti:Int,index:Index_t,increment:Index_t,todo:Int):Index_t {
         var lvolsel = vnf.lvolsel/MAXVOL_FACTOR;
         var rvolsel = vnf.rvolsel/MAXVOL_FACTOR;
 	var sample;
 
 	desti<<=3;
-	desti+=vc_tickbuf;
+	//desti+=vc_tickbuf;	// tickbuf=0
 	for (i in 0 ... todo) {
 		sample=Mem.getFloat(srci+indexToSample(index));
                 index += increment;
@@ -215,8 +210,9 @@ class Virtch {
    static function AddChannel(todo:Int) {
 	var end:Index_t;
 	var done:Int;
-	var s:Int;		// Mem.buf index
+	var s:MEMPTR;
 	var ptri=0;
+	var endpos:Index_t;
 
         if((s=Samples[vnf.handle])==-1) {
                 vnf.current=0; vnf.active=false;
@@ -233,8 +229,6 @@ class Virtch {
         /* update the 'current' index so the sample loops, or stops playing if it
            reached the end of the sample */
         while(todo>0) {
-		var endpos:Index_t;
-
                 if (reverse) {
                         /* The sample is playing in reverse */
                         if (loop && !greaterOrEqual(vnf.current,idxlpos)) {
@@ -399,7 +393,6 @@ class Virtch {
    public static function WriteSamples(buf:ByteArray) {
 	var left:Int;
 	var portion=0;
-	var t:Int;
 	var pan:Int;
 	var vol:Int;
 	var todo=buffer_size;
@@ -448,14 +441,21 @@ class Virtch {
 			   }
 			   idxlpos=sampleToIndex(vnf.reppos); 
 			   AddChannel(portion);
-			   TrackerEventDispatcher.dispatchEventDelay(new hxmikmod.event.TrackerSamplePosEvent(t,indexToSampleF(vnf.current),indexToSampleF(vnf.increment)),MPlayer.pf.sngtime-MPlayer.pf.audiobufferstart);
 			}
 		}
+		var startpos=buf.position;
 		Mix32toFP(buf,portion);
-		TrackerEventDispatcher.dispatchEvent(new TrackerAudioBufferEvent(vc_tickbuf,portion,written,buffer_size));
+		var endpos=buf.position;
+                //TrackerEventDispatcher.dispatchEvent(new TrackerAudioBufferEvent(buf,startpos,endpos,buffer_size));
+		TrackerEventDispatcher.dispatchEvent(new TrackerAudioBufferEvent(buf,startpos,endpos,buffer_size));
 		written+=portion;
                 left-=portion;
 	   }
+	}
+	for (i in 0 ... vc_softchn) {
+		vnf=vinf[i];
+		if (!vnf.active) continue;
+		TrackerEventDispatcher.dispatchEvent(new hxmikmod.event.TrackerSamplePosEvent(i,indexToSampleF(vnf.current),indexToSampleF(vnf.increment)));
 	}
    }
 

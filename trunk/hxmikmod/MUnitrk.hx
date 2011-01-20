@@ -21,12 +21,14 @@
 package hxmikmod;
 
 import hxmikmod.Types;
-
+import hxmikmod.Mem;
 
 class MUnitrk {
 
    /* Unibuffer chunk size */
-   inline public static var BUFPAGE=128;
+   /* Allocate so much that realloc() is never needed, because it won't work with hxmikmod.Mem */
+
+   inline public static var BUFPAGE=8192;
 
    public static var unioperands=[
         0, /* not used */
@@ -97,28 +99,33 @@ class MUnitrk {
 
 /*========== Reading routines */
 
-   public static var rowstart:Int;
-   public static var rowend:Int;
-   public static var rowpc:Int;
+   public static var rowstart:MEMPTR;
+   public static var rowend:MEMPTR;
+   public static var rowpc:MEMPTR;
    public static var lastbyte:UBYTE;
-   public static var rowdata:Array<UBYTE>;
 
 
-   // pointers -> indices. NULL -> -1
-
-   public static function UniSetRow(rd:Array<UBYTE>,t:Int) {
-	rowdata=rd;
+   public static function UniSetRow(t:MEMPTR) {
         rowstart = t;
         rowpc    = rowstart;
-        rowend   = (t!=-1)?rowstart+(rowdata[rowpc++]&0x1f):t;
+	if (t==0) rowend=0;
+	else {
+           rowend   = rowstart+(Mem.getByte(rowpc)&0x1f);
+	   rowpc++;
+	}	
    }
 
    public static function UniGetByte():UBYTE {
-        return lastbyte = ((rowpc<rowend)?rowdata[rowpc++]:0)&255;
+        lastbyte = ((rowpc<rowend)?Mem.getByte(rowpc):0)&255;
+	if (rowpc<rowend) rowpc++;
+	return lastbyte;
    }
 
    public static function UniGetWord():UWORD {
-        return (UniGetByte()<<8)|UniGetByte();
+	if (rowpc<rowend) return 0;
+	var ret=Mem.getShort(rowpc)&0xffff;
+	rowpc+=2;
+	return ret;
    }
 
 
@@ -135,29 +142,28 @@ class MUnitrk {
    /* Finds the address of row number 'row' in the UniMod(tm) stream 't' returns
       NULL if the row can't be found. */
 
-   public static function UniFindRow(t:Array<UBYTE>,row:UWORD):Int {
+   public static function UniFindRow(t:MEMPTR,row:UWORD):MEMPTR {
         var c:UBYTE;
 	var l:UBYTE;
-	var ti=0;
 
-        if (t!=null)
+        if (t!=0)
                 while(true) {
-                        c = t[ti];             /* get rep/len byte */
-                        if (c==0) return -1; /* zero ? -> end of track.. */
+                        c = Mem.getByte(t)&0xff;             /* get rep/len byte */
+                        if (c==0) { trace("UniFindRow failed"); return 0; } /* zero ? -> end of track.. */
                         l = (c>>5)+1;       /* extract repeat value */
                         if (l>row) break;    /* reached wanted row? -> return pointer */
                         row -= l;           /* haven't reached row yet.. update row */
-                        ti += (c&0x1f);        /* point t to the next row */
+                        t += (c&0x1f);        /* point t to the next row */
                 }
-        return t==null?-1:ti;
+        return t;
    }
 
 
 
 /*========== Writing routines */
 
-   public static var unibuf:Array<UBYTE>;  /* pointer to the temporary unitrk buffer */
-   //public static var unimax:UWORD;  /* buffer size */
+   public static var unibuf:MEMPTR;  /* pointer to the temporary unitrk buffer */
+   public static var unimax:UWORD;  /* buffer size */
 
    public static var unipc:UWORD;   /* buffer cursor */
    public static var unitt:UWORD;   /* current row index */
@@ -168,50 +174,46 @@ class MUnitrk {
         unitt     = 0;   /* reset index to rep/len byte */
         unipc     = 1;   /* first opcode will be written to index 1 */
         lastp     = 0;   /* no previous row yet */
-        unibuf[0] = 0;   /* clear rep/len byte */
+	Mem.setByte(unibuf,0);	/* clear rep/len byte */
    }
 
 
 
    /* Expands the buffer */
    public static function UniExpand(wanted:Int):Bool {
-	/*
         if ((unipc+wanted)>=unimax) {
-		var newbuf:Array<UBYTE>;
-
                 // Expand the buffer by BUFPAGE bytes
-                newbuf=(UBYTE*)realloc(unibuf,(unimax+BUFPAGE)*sizeof(UBYTE));
-
-                // Check if realloc succeeded
-                if(newbuf) {
-                        unibuf = newbuf;
+                if (Mem.realloc(unibuf,(unimax+BUFPAGE))) {
+                	// Check if realloc succeeded
                         unimax+=BUFPAGE;
-                        return 1;
-                } else 
-                        return 0;
+                        return true;
+                } else
+                        return false;
         }
-        return 1;
-	*/
-	return true;
+        return true;
    }
 
 
    /* Appends one byte of data to the current row of a track. */
    public static function UniWriteByte(data:UBYTE):Void {
-	unibuf[unipc++]=data;
+	if (UniExpand(1)) {
+	   Mem.setByte(unibuf+unipc,data);
+	   unipc++;
+	}
    }
 
 
    public static function UniWriteWord(data:UWORD):Void {
-                unibuf[unipc++]=(data>>8)&0xff;
-                unibuf[unipc++]=data&0xff;
+	if (UniExpand(2)) {
+		Mem.setShort(unibuf+unipc,data);
+		unipc+=2;
+	}
    }
 
 
-   public static function MyCmp(a:Array<UBYTE>,ai:Int,b:Array<UBYTE>,bi:Int,l:UWORD):Bool {
-        var t:UWORD;
-        for (t in 0 ... l)
-                if (a[t+ai]!=b[t+bi]) return false;
+   public static function MyCmp(a:MEMPTR,b:MEMPTR,len:UWORD):Bool {
+        for (t in 0 ... len)
+                if (Mem.getByte(a+t)!=Mem.getByte(b+t)) return false;
         return true;
    }
 
@@ -223,55 +225,56 @@ class MUnitrk {
 	var l:UWORD;
 	var len:UWORD;
 
-        n = (unibuf[lastp]>>5)+1;     /* repeat of previous row */
-        l = (unibuf[lastp]&0x1f);     /* length of previous row */
+	var b=Mem.getByte(unibuf+lastp);
+        n = (b>>5)+1;     /* repeat of previous row */
+        l = (b&0x1f);     /* length of previous row */
 
         len = unipc-unitt;            /* length of current row */
 
         /* Now, check if the previous and the current row are identical.. when they
            are, just increase the repeat field of the previous row */
-        if(n<8 && len==l && MyCmp(unibuf,lastp+1,unibuf,unitt+1,len-1)) {
-                unibuf[lastp]+=0x20;
+        if(n<8 && len==l && MyCmp(unibuf+lastp+1,unibuf+unitt+1,len-1)) {
+                Mem.setByte(unibuf+lastp,Mem.getByte(unibuf+lastp)+0x20);
                 unipc = unitt+1;
         } else {
+		if (UniExpand(unitt-unipc)) {
                         /* current and previous row aren't equal... update the pointers */
-                        unibuf[unitt] = len;
+			Mem.setByte(unibuf+unitt,len);
                         lastp = unitt;
                         unitt = unipc++;
+		}
         }
    }
 
 
-   static function memcpy(dst:Array<UBYTE>,src:Array<UBYTE>,len:Int) {
-	var i;
-	for (i in 0 ... len) dst[i]=src[i];
+   static function memcpy(dst:MEMPTR,src:MEMPTR,len:Int) {
+	for (i in 0 ... len) Mem.setByte(dst+i,Mem.getByte(src+i));	// could use writeBytes for a marginal gain
    }
 
 
+   /* Terminates the current unitrk stream and returns a pointer to a copy of the
+      stream. */
 
-/* Terminates the current unitrk stream and returns a pointer to a copy of the
-   stream. */
-   public static function UniDup():Array<UBYTE> {
-        var d:Array<UBYTE>;
+   public static function UniDup():MEMPTR {
+        var d:MEMPTR;
 
-        unibuf[unitt] = 0;
+        if (!UniExpand(unitt-unipc)) return 0;
+        Mem.setByte(unibuf+unitt,0);
 
-	if ((d=new Array())==null) return null;
+	if ((d=Mem.alloc(unipc))==0) return 0;
         memcpy(d,unibuf,unipc);
-
         return d;
    }
 
    public static function UniInit():Bool {
-        //unimax = BUFPAGE;
-	unibuf=new Array();
-	//var i:Int;
-	//for (i in 0 ... unimax) unibuf[i]=0;
-	return (unibuf!=null);
+        unimax = BUFPAGE;
+	unibuf=Mem.alloc(unimax);
+	return (unibuf!=0);
    }
 
    public static function UniCleanup() {
-	unibuf=null;
+	if (unibuf!=0) Mem.free(unibuf);
+	unibuf=0;
    }
 
 

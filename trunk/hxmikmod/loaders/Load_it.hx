@@ -30,7 +30,7 @@ import hxmikmod.MLutils;
 import hxmikmod.Defs;
 import hxmikmod.SAMPLE;
 import hxmikmod.MODULE;
-
+import hxmikmod.Mem;
 
 
 /*========== Module structure */
@@ -290,7 +290,7 @@ class Load_it extends MLoader {
 
 
 
-   static function IT_ConvertTrack(tr:Array<ITNOTE>,tri:Int,numrows:UWORD):Array<UBYTE> {
+   static function IT_ConvertTrack(tr:Array<ITNOTE>,tri:Int,numrows:UWORD):MEMPTR {
 	//var t:Int;
 	var note:UBYTE;
 	var ins:UBYTE;
@@ -319,7 +319,7 @@ class Load_it extends MLoader {
                         MUnitrk.UniWriteByte(Defs.UNI_KEYOFF);
                 else if(ins!=255) { /* crap */
                         MMio._mm_errno=Defs.MMERR_LOADING_PATTERN;
-                        return null;
+                        return 0;
                 }
 
                 /* process volume / panning column
@@ -345,7 +345,7 @@ class Load_it extends MLoader {
                         MLutils.UniVolEffect(Defs.VOL_PITCHSLIDEUP,(volpan-115));
                 else if(volpan<=127) { /* crap */
                         MMio._mm_errno=Defs.MMERR_LOADING_PATTERN;
-                        return null;
+                        return 0;
                 } else if(volpan<=192)
                         MLutils.UniVolEffect(Defs.VOL_PANNING,((volpan-128)==64)?255:((volpan-128)<<2));
                 else if(volpan<=202)/* portamento to note */
@@ -354,7 +354,7 @@ class Load_it extends MLoader {
                         MLutils.UniVolEffect(Defs.VOL_VIBRATO,(volpan-203));
                 else if((volpan!=239)&&(volpan!=255)) { /* crap */
                         MMio._mm_errno=Defs.MMERR_LOADING_PATTERN;
-                        return null;
+                        return 0;
                 }
 
                 MLutils.S3MIT_ProcessCmd(tr[tri+t*MLoader.of.numchn].cmd,tr[tri+t*MLoader.of.numchn].inf,
@@ -424,7 +424,7 @@ class Load_it extends MLoader {
         } while(row<patrows);
 
         for(blah in 0 ... MLoader.of.numchn) {
-                if(null==(MLoader.of.tracks[numtrk++]=IT_ConvertTrack(itpat,blah,patrows)))
+                if(0==(MLoader.of.tracks[numtrk++]=IT_ConvertTrack(itpat,blah,patrows)))
                         return false;
         }
 

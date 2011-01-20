@@ -21,6 +21,7 @@
 package hxmikmod;
 
 import hxmikmod.Types;
+import hxmikmod.Mem;
 
 class MP_CONTROL {
 	public var main:MP_CHANNEL;
@@ -35,8 +36,7 @@ class MP_CONTROL {
 	public var ownvol:SWORD;
 	public var dca:UBYTE;
 	public var dct:UBYTE;
-	public var rowdata:Array<UBYTE>;
-	public var row:Int;		// index of rowdata
+	public var row:MEMPTR;
 	public var retrig:SBYTE;
 	public var speed:ULONG;
 	public var volume:SWORD;
