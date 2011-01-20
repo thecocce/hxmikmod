@@ -2068,8 +2068,8 @@ Profiler.ENTER();
                         if (a.main.kick==Defs.KICK_KEYOFF)
                                 a.main.keyoff=aout.main.keyoff;
                 }
-                if (a.row==-1) continue;	// !a.row
-                MUnitrk.UniSetRow(a.rowdata,a.row);
+                if (a.row==0) continue;
+                MUnitrk.UniSetRow(a.row);
 
                 a.ownper=a.ownvol=0;
                 explicitslides = (pt_playeffects(mod, channel, a)!=0);
@@ -2179,8 +2179,8 @@ Profiler.LEAVE();
 Profiler.ENTER();
 	for (channel in 0 ... mod.numchn) {
                 a=mod.control[channel];
-                if (a.row==-1) continue;
-                MUnitrk.UniSetRow(a.rowdata,a.row);
+                if (a.row==0) continue;
+                MUnitrk.UniSetRow(a.row);
                 while((c=MUnitrk.UniGetByte())!=0)
                         if (c==Defs.UNI_ITEFFECTS0) {
                                 c=MUnitrk.UniGetByte();
@@ -2557,13 +2557,12 @@ Profiler.LEAVE();
                         mod.numrow=mod.pattrows[mod.positions[mod.sngpos]];
                 }
 
-                a.row=(tr<mod.numtrk)?MUnitrk.UniFindRow(mod.tracks[tr],mod.patpos):-1;
-		a.rowdata=mod.tracks[tr];
+                a.row=(tr<mod.numtrk)?MUnitrk.UniFindRow(mod.tracks[tr],mod.patpos):0;
                 a.newsamp=0;
                 if (mod.vbtick==0) a.main.notedelay=0;
 
-                if (a.row==-1) continue;
-                MUnitrk.UniSetRow(a.rowdata,a.row);
+                if (a.row==0) continue;
+                MUnitrk.UniSetRow(a.row);
                 funky=0;
 
                 while((c=MUnitrk.UniGetByte())!=0)

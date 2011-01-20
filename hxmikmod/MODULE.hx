@@ -21,6 +21,7 @@
 package hxmikmod;
 
 import hxmikmod.Types;
+import hxmikmod.Mem;
 
 
 class MODULE {
@@ -69,7 +70,7 @@ class MODULE {
 
         /* internal module representation */
 	public var numtrk:UWORD;
-	public var tracks:Array<Array<UBYTE>>;
+	public var tracks:Array<MEMPTR>;
 	public var patterns:Array<UWORD>;
 	public var pattrows:Array<UWORD>;
 	public var positions:Array<UWORD>;

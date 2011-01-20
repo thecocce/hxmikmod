@@ -30,7 +30,7 @@ import hxmikmod.MLutils;
 import hxmikmod.Defs;
 import hxmikmod.SAMPLE;
 import hxmikmod.MODULE;
-
+import hxmikmod.Mem;
 
 
 /* header */
@@ -231,7 +231,7 @@ class Load_s3m extends MLoader {
 
 
 
-   static function S3M_ConvertTrack(tr:Array<S3MNOTE>,tri:Int):Array<UBYTE> {
+   static function S3M_ConvertTrack(tr:Array<S3MNOTE>,tri:Int):MEMPTR {
 	//var t:Int;
 
         MUnitrk.UniReset();
@@ -453,7 +453,7 @@ class Load_s3m extends MLoader {
                 MMio._mm_fseek(MLoader.modreader,((paraptr[MLoader.of.numins+t])<<4)+2,MMio.SEEK_SET);
                 if(!S3M_ReadPattern()) return false;
                 for(u in 0 ... MLoader.of.numchn)
-                        if(null==(MLoader.of.tracks[track++]=S3M_ConvertTrack(s3mbuf,u*64))) return false;
+                        if(0==(MLoader.of.tracks[track++]=S3M_ConvertTrack(s3mbuf,u*64))) return false;
         }
 
         return true;

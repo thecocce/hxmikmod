@@ -30,6 +30,7 @@ import hxmikmod.MLutils;
 import hxmikmod.Defs;
 import hxmikmod.SAMPLE;
 import hxmikmod.MODULE;
+import hxmikmod.Mem;
 
 
 class XMHEADER {
@@ -215,7 +216,7 @@ class Load_xm extends MLoader {
 
 
 
-   static function XM_Convert(xmtracka:Array<XMNOTE>,xmtracki:Int,rows:UWORD):Array<UBYTE> {
+   static function XM_Convert(xmtracka:Array<XMNOTE>,xmtracki:Int,rows:UWORD):MEMPTR {
 	var t:Int;
 	var note:UBYTE;
 	var ins:UBYTE;

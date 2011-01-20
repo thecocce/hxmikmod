@@ -103,16 +103,16 @@ class TrackerNoteEvent extends TrackerEvent {
 
 class TrackerAudioBufferEvent extends TrackerEvent {
    inline public static var TYPE="TrackerAudioBufferEvent";
-   public var addr:Int;
-   public var samples:Int;
-   public var pos:Int;
+   public var addr:ByteArray;
+   public var startpos:Int;
+   public var endpos:Int;
    public var audiobufsize:Int;
 
-   public function new(addr:Int,samples:Int,pos:Int,audiobufsize:Int) {
+   public function new(addr:ByteArray,startpos:Int,endpos:Int,audiobufsize:Int) {
 	super(TYPE);
 	this.addr=addr;
-	this.samples=samples;
-	this.pos=pos;
+	this.startpos=startpos;
+	this.endpos=endpos;
 	this.audiobufsize=audiobufsize;
    }
 }
