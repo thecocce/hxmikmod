@@ -1,5 +1,5 @@
 -swf MultiPlayer.swf
 -swf-version 10
--swf-header 850:500:20:808080
+-swf-header 850:550:20:808080
 -main MultiPlayer
 -D PROFILING

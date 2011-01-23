@@ -116,3 +116,17 @@ class TrackerAudioBufferEvent extends TrackerEvent {
 	this.audiobufsize=audiobufsize;
    }
 }
+
+
+class TrackerPlayPosEvent extends TrackerEvent {
+   inline public static var TYPE="TrackerPlayPosEvent";
+   public var pos:Int;
+   public var max:Int;
+   public var finished:Bool;
+
+   public function new(pos:Int,max:Int,finished:Bool) {
+	super(TYPE);
+	this.pos=pos; this.max=max; this.finished=finished;
+   }
+
+}
