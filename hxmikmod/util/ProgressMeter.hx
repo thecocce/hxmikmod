@@ -44,7 +44,7 @@ class ProgressMeter extends Sprite {
 	bg.graphics.drawRect(2,2,w-4,h-4);
 	addChild(bg);
 	prog=new Shape();
-	prog.graphics.beginFill(0x00a000);
+	prog.graphics.beginFill(0x000000);
 	prog.graphics.drawRect(0,0,w-4,h-4);
 	prog.graphics.endFill();
 	prog.x=2; prog.y=2;
@@ -53,6 +53,7 @@ class ProgressMeter extends Sprite {
 	addChild(tf);
 	tf.x=0; tf.y=4; tf.width=w;
 	tf.autoSize=TextFieldAutoSize.CENTER;
+	tf.textColor=0x00a000;
 	TrackerEventDispatcher.addEventListener(TrackerLoadingEvent.TYPE,onLoading);
    }
 

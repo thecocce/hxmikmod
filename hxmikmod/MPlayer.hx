@@ -2763,7 +2763,11 @@ Profiler.LEAVE();
                            *inside* the module in some formats */
                         if ((pf.sngpos>=pf.numpos)||
                                 (pf.positions[pf.sngpos]==Defs.LAST_PATTERN)) {
-                                if (!pf.wrap) { Profiler.LEAVE(); return; }
+                                if (!pf.wrap) {
+					TrackerEventDispatcher.dispatchEvent(new TrackerPlayPosEvent(pf.sngpos,pf.numpos,true));
+					Profiler.LEAVE();
+					return;
+				}
                                 if ((pf.sngpos=pf.reppos)==0) {
                                     pf.volume=pf.initvolume>128?128:pf.initvolume;
                                         if(pf.initspeed!=0)
@@ -2774,6 +2778,7 @@ Profiler.LEAVE();
                                 }
                         }
                         if (pf.sngpos<0) pf.sngpos=pf.numpos-1;
+			TrackerEventDispatcher.dispatchEvent(new TrackerPlayPosEvent(pf.sngpos,pf.numpos,false));
                 }
 
                 if (pf.patdly2==0)
