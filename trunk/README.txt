@@ -126,6 +126,7 @@ Impulse Tracker compressed sample loading is SLOW. I'm not sure if this is a bug
 Resources
 =========
 
+hxmikmod:                   http://code.google.com/p/hxmikmod/
 The original MikMod site:   http://mikmod.raphnet.net/
 The Mod Archive:            http://modarchive.org/
 Modland:                    ftp://ftp.modland.com/
