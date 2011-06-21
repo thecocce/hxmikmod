@@ -121,7 +121,7 @@ class MMio {
 	return reader.i.readByte();
    }
 
-   public static function _mm_read_UBYTES(len:Int,reader:MREADER):Array<UBYTE> {
+   public static function _mm_read_UBYTES(len:UInt,reader:MREADER):Array<UBYTE> {
 	var ret=new Array<UBYTE>();
 	if (reader.i.bytesAvailable<len) return null;
 	for (a in 0 ... len) {
@@ -130,7 +130,7 @@ class MMio {
 	return ret;
    }
 
-   public static function _mm_read_ByteArray(len:Int,reader:MREADER):ByteArray {
+   public static function _mm_read_ByteArray(len:UInt,reader:MREADER):ByteArray {
         var ret=new ByteArray();
         reader.i.readBytes(ret,0,len);
         if (ret.bytesAvailable!=len) return null;
