@@ -35,7 +35,7 @@ class MLutils {
    public static var remap=new Array<SBYTE>(); 		//[UF_MAXCHAN];   /* for removing empty channels */
    public static var poslookup; 	/* lookup table for pattern jumps after blank pattern removal */
    public static var poslookupcnt:UBYTE;
-   public static var origpositions;
+   public static var origpositions:Array<Int>;
 
    public static var filters:Bool;              	/* resonant filters in use */
    public static var activemacro:UBYTE;            	/* active midi macro number for Sxx,xx<80h */
