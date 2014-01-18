@@ -1,4 +1,4 @@
 #summary Another demo with several songs and some profiling information
 
 
-<wiki:gadget width="600" height="450" url="https://tubehelper.com/~modplayer/gadget/gadget2.html?v=4" />
+<wiki:gadget width="600" height="450" url="https://tubehelper.com/~modplayer/gadget/gadget2.html?v=5" />
